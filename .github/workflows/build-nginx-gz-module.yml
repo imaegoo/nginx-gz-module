@@ -1,4 +1,4 @@
-name: Build Nginx GZ Dynamic Module
+name: Build Nginx with GZip Module (ARM64)
 
 on:
   workflow_dispatch:
@@ -19,22 +19,27 @@ jobs:
           wget https://nginx.org/download/nginx-1.22.1.tar.gz
           tar xzf nginx-1.22.1.tar.gz
 
-      - name: Extract gzip filter module source
-        run: |
-          cp nginx-1.22.1/src/http/modules/ngx_http_gzip_filter_module.c ngx_http_gzip_filter_module/
-          cp nginx-1.22.1/src/http/modules/ngx_http_gzip_filter_module.h ngx_http_gzip_filter_module/
-
-      - name: Configure and build dynamic module
+      - name: Configure and build nginx
         run: |
           cd nginx-1.22.1
           ./configure \
-            --with-compat \
-            --add-dynamic-module=../ngx_http_gzip_filter_module
-          make modules
-          cp objs/ngx_http_gzip_filter_module.so ../
+            --prefix=/etc/nginx \
+            --with-http_ssl_module \
+            --with-http_gzip_static_module \
+            --with-http_gunzip_module
+          make -j$(nproc)
+          make install
 
-      - name: Upload module artifact
+      - name: Verify gzip module
+        run: /etc/nginx/sbin/nginx -V 2>&1 | tr ' ' '\n' | grep -i gzip
+
+      - name: Package nginx
+        run: |
+          cd /etc/nginx
+          tar czf $GITHUB_WORKSPACE/nginx-1.22.1-arm64.tar.gz .
+
+      - name: Upload nginx artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ngx_http_gzip_filter_module-arm64
-          path: ngx_http_gzip_filter_module.so
+          name: nginx-1.22.1-arm64
+          path: nginx-1.22.1-arm64.tar.gz
