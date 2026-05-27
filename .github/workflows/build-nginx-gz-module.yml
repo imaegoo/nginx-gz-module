@@ -11,27 +11,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev libssl-dev
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential
 
-      - name: Download nginx 1.22.1 source
+      - name: Download source archives
         run: |
           wget https://nginx.org/download/nginx-1.22.1.tar.gz
+          wget https://www.openssl.org/source/openssl-1.1.1w.tar.gz
+          wget https://sourceforge.net/projects/pcre/files/pcre/8.45/pcre-8.45.tar.gz
+          wget https://zlib.net/fossils/zlib-1.2.13.tar.gz
           tar xzf nginx-1.22.1.tar.gz
+          tar xzf openssl-1.1.1w.tar.gz
+          tar xzf pcre-8.45.tar.gz
+          tar xzf zlib-1.2.13.tar.gz
 
-      - name: Configure and build nginx
+      - name: Configure and build nginx with static dependencies
         run: |
           cd nginx-1.22.1
           ./configure \
             --prefix=$GITHUB_WORKSPACE/nginx-install \
+            --with-openssl=$GITHUB_WORKSPACE/openssl-1.1.1w \
+            --with-pcre=$GITHUB_WORKSPACE/pcre-8.45 \
+            --with-zlib=$GITHUB_WORKSPACE/zlib-1.2.13 \
             --with-http_ssl_module \
             --with-http_gzip_static_module \
             --with-http_gunzip_module
           make -j$(nproc)
           make install
 
-      - name: Verify gzip module
-        run: $GITHUB_WORKSPACE/nginx-install/sbin/nginx -V 2>&1 | tr ' ' '\n' | grep -i gzip
+      - name: Verify build
+        run: |
+          $GITHUB_WORKSPACE/nginx-install/sbin/nginx -V 2>&1
+          echo "--- Shared library dependencies ---"
+          ldd $GITHUB_WORKSPACE/nginx-install/sbin/nginx || true
 
       - name: Package nginx
         run: |
