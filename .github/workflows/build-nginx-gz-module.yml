@@ -19,12 +19,17 @@ jobs:
           wget https://nginx.org/download/nginx-1.22.1.tar.gz
           tar xzf nginx-1.22.1.tar.gz
 
+      - name: Extract gzip filter module source
+        run: |
+          cp nginx-1.22.1/src/http/modules/ngx_http_gzip_filter_module.c ngx_http_gzip_filter_module/
+          cp nginx-1.22.1/src/http/modules/ngx_http_gzip_filter_module.h ngx_http_gzip_filter_module/
+
       - name: Configure and build dynamic module
         run: |
           cd nginx-1.22.1
           ./configure \
             --with-compat \
-            --with-http_gzip_filter_module=dynamic
+            --add-dynamic-module=../ngx_http_gzip_filter_module
           make modules
           cp objs/ngx_http_gzip_filter_module.so ../
 
