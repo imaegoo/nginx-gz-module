@@ -1,0 +1,35 @@
+name: Build Nginx GZ Dynamic Module
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential libpcre3-dev zlib1g-dev libssl-dev
+
+      - name: Download nginx 1.22.1 source
+        run: |
+          wget https://nginx.org/download/nginx-1.22.1.tar.gz
+          tar xzf nginx-1.22.1.tar.gz
+
+      - name: Configure and build dynamic module
+        run: |
+          cd nginx-1.22.1
+          ./configure \
+            --with-compat \
+            --with-http_gzip_filter_module=dynamic
+          make modules
+          cp objs/ngx_http_gzip_filter_module.so ../
+
+      - name: Upload module artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ngx_http_gzip_filter_module-arm64
+          path: ngx_http_gzip_filter_module.so
