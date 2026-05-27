@@ -23,7 +23,7 @@ jobs:
         run: |
           cd nginx-1.22.1
           ./configure \
-            --prefix=/etc/nginx \
+            --prefix=$GITHUB_WORKSPACE/nginx-install \
             --with-http_ssl_module \
             --with-http_gzip_static_module \
             --with-http_gunzip_module
@@ -31,11 +31,11 @@ jobs:
           make install
 
       - name: Verify gzip module
-        run: /etc/nginx/sbin/nginx -V 2>&1 | tr ' ' '\n' | grep -i gzip
+        run: $GITHUB_WORKSPACE/nginx-install/sbin/nginx -V 2>&1 | tr ' ' '\n' | grep -i gzip
 
       - name: Package nginx
         run: |
-          cd /etc/nginx
+          cd $GITHUB_WORKSPACE/nginx-install
           tar czf $GITHUB_WORKSPACE/nginx-1.22.1-arm64.tar.gz .
 
       - name: Upload nginx artifact
